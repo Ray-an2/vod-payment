@@ -1,0 +1,224 @@
+openapi: 3.0.3
+info:
+  title: API de Gestion des Paiements
+  description: |
+    API REST permettant la gestion des paiements dans le système VOD.
+    Types supportés:
+    - CARTE: informations carte obligatoires (cardOwner, cardNumber, cardExpiryDate, cvv)
+    - WALLET: walletProvider obligatoire (PAYPAL, APPLE_PAY, GOOGLE_PAY)
+  version: 1.0.0
+  contact:
+    name: Support API
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8080
+    description: Serveur de développement local
+
+tags:
+  - name: payments
+    description: Opérations liées à la gestion des paiements
+
+paths:
+  /payments:
+    get:
+      tags:
+        - payments
+      summary: Récupère tous les paiements
+      description: Retourne la liste complète des paiements enregistrés dans le système
+      operationId: getAllPayments
+      responses:
+        '200':
+          description: Liste des paiements récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentDto'
+        '500':
+          description: Erreur serveur interne
+
+    post:
+      tags:
+        - payments
+      summary: Crée un nouveau paiement
+      description: Ajoute un nouveau paiement dans le système
+      operationId: createPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentDto'
+      responses:
+        '201':
+          description: Paiement créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDto'
+        '400':
+          description: Données invalides
+        '500':
+          description: Erreur serveur interne
+
+  /payments/{id}:
+    get:
+      tags:
+        - payments
+      summary: Récupère un paiement par son ID
+      description: Retourne les détails d'un paiement spécifique
+      operationId: getPaymentById
+      parameters:
+        - name: id
+          in: path
+          description: ID du paiement à récupérer
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Paiement trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentDto'
+        '404':
+          description: Paiement non trouvé
+        '500':
+          description: Erreur serveur interne
+
+    delete:
+      tags:
+        - payments
+      summary: Supprime un paiement
+      description: Supprime un paiement du système par son ID
+      operationId: deletePayment
+      parameters:
+        - name: id
+          in: path
+          description: ID du paiement à supprimer
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Paiement supprimé avec succès
+          content:
+            application/json:
+              schema:
+                type: boolean
+        '404':
+          description: Paiement non trouvé
+        '500':
+          description: Erreur serveur interne
+
+components:
+  schemas:
+    PaymentDto:
+      description: Paiement polymorphe (CARTE ou WALLET)
+      oneOf:
+        - $ref: '#/components/schemas/CardPaymentDto'
+        - $ref: '#/components/schemas/WalletPaymentDto'
+      discriminator:
+        propertyName: type
+        mapping:
+          CARTE: '#/components/schemas/CardPaymentDto'
+          WALLET: '#/components/schemas/WalletPaymentDto'
+
+    BasePaymentDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identifiant unique du paiement
+          example: 1
+        type:
+          $ref: '#/components/schemas/PaymentType'
+        statut:
+          $ref: '#/components/schemas/PaymentStatus'
+        montant:
+          type: integer
+          format: int32
+          description: Montant du paiement
+          minimum: 0
+          example: 15
+      required:
+        - type
+        - statut
+        - montant
+
+    CardPaymentDto:
+      allOf:
+        - $ref: '#/components/schemas/BasePaymentDto'
+        - type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - CARTE
+            cardOwner:
+              type: string
+              description: Nom du propriétaire de la carte
+              example: "Jean Dupont"
+            cardNumber:
+              type: string
+              description: Numéro de carte sur 16 chiffres
+              pattern: '^\\d{16}$'
+              example: "4970100000000000"
+            cardExpiryDate:
+              type: string
+              description: Date de validité au format MM/YY
+              pattern: '^(0[1-9]|1[0-2])\\/\\d{2}$'
+              example: "12/30"
+            cvv:
+              type: string
+              description: Code CVV sur 3 chiffres
+              pattern: '^\\d{3}$'
+              example: "123"
+          required:
+            - cardOwner
+            - cardNumber
+            - cardExpiryDate
+            - cvv
+
+    WalletPaymentDto:
+      allOf:
+        - $ref: '#/components/schemas/BasePaymentDto'
+        - type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - WALLET
+            walletProvider:
+              $ref: '#/components/schemas/WalletProvider'
+          required:
+            - walletProvider
+
+    PaymentType:
+      type: string
+      description: Type du paiement
+      enum:
+        - CARTE
+        - WALLET
+
+    WalletProvider:
+      type: string
+      description: Fournisseur du wallet (obligatoire si type=WALLET)
+      enum:
+        - PAYPAL
+        - APPLE_PAY
+        - GOOGLE_PAY
+
+    PaymentStatus:
+      type: string
+      description: Statut du paiement
+      enum:
+        - EN_ATTENTE
+        - EFFECTUE
+        - ECHOUE

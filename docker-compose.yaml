@@ -1,0 +1,12 @@
+services:
+  mariadb:
+    image: mariadb:latest
+    environment:
+      MARIADB_ROOT_PASSWORD: monMotDePasseSuperSecret
+      MARIADB_DATABASE: test
+      MARIADB_USER: payment_user
+      MARIADB_PASSWORD: payment_password
+    volumes:
+      - ./data:/var/lib/mysql
+    ports:
+      - "3307:3306"
