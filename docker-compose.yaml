@@ -8,5 +8,6 @@ services:
       MARIADB_PASSWORD: payment_password
     volumes:
       - ./data:/var/lib/mysql
+      - ./docker/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "3307:3306"
+      - "11064:3306"

@@ -52,7 +52,7 @@ class PaymentControllerTest {
     }
 
     /**
-     * @Description: fabrique un PaymentDto pour eviter la duplication dans les tests.
+     * @Description: fabrique un PaymentDto pour eviter de la duplication dans les tests.
      * @Params:
      * - id: identifiant du paiement (null en creation).
      * - type: type de paiement (CARTE ou WALLET).

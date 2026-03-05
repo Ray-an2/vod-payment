@@ -74,6 +74,42 @@ curl -X POST http://localhost:8080/payments \
 - Swagger UI : `http://localhost:8080/swagger-ui.html`
 - JSON docs : `http://localhost:8080/api-docs`
 
+## Donnees de test BDD (Docker Compose)
+
+Le service `mariadb` charge automatiquement les scripts SQL presents dans `docker/init/` au premier demarrage (quand le dossier `data/` est vide).
+
+- Seed configure : `docker/init/01-seed-payments.sql`
+- Cette seed cree la table `payment` si besoin puis insere des paiements de test.
+
+Pour reinitialiser la base et rejouer la seed :
+
+```bash
+docker compose down
+sudo rm -rf data/*
+docker compose up -d
+```
+
+Verifier les donnees :
+
+```bash
+docker compose exec mariadb mariadb -upayment_user -ppayment_password test -e "SELECT id, type, statut, montant FROM payment ORDER BY id;"
+```
+
+### Smoke test CRUD SQL (MariaDB)
+
+Script :
+- `scripts/sql/payment_crud_smoke_test.sql`
+
+Execution :
+
+```bash
+docker compose exec -T mariadb mariadb -upayment_user -ppayment_password < scripts/sql/payment_crud_smoke_test.sql
+```
+
+### Test JUnit CRUD automatise (Testcontainers)
+
+Le test `PaymentIntegrationTest` demarre un conteneur MariaDB ephemere automatiquement, execute le CRUD puis nettoie les donnees. Aucun `keepData` ni base locale preexistante n'est necessaire.
+
 ## Tests
 
 Les tests HTTP sont dans :
